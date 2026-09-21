@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Docker Compose Todo App</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:Arial,sans-serif; background:#f4f7fb; color:#1f2937; }
+    .container { max-width:760px; margin:50px auto; padding:30px; background:white;
+      border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,.08); }
+    h1 { margin-top:0; }
+    .subtitle { color:#6b7280; }
+    form { display:flex; gap:10px; margin:25px 0; }
+    input { flex:1; padding:12px; border:1px solid #d1d5db; border-radius:8px; font-size:16px; }
+    button { border:0; border-radius:8px; padding:11px 16px; cursor:pointer;
+      background:#2563eb; color:white; font-weight:bold; }
+    button.delete { background:#dc2626; }
+    ul { list-style:none; padding:0; }
+    li { display:flex; justify-content:space-between; align-items:center; gap:10px;
+      padding:14px; border-bottom:1px solid #e5e7eb; }
+    .task { flex:1; }
+    .completed { text-decoration:line-through; color:#9ca3af; }
+    .actions { display:flex; gap:8px; }
+    #status { margin-top:15px; color:#059669; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Docker Compose Todo App</h1>
+    <p class="subtitle">Frontend + Flask Backend + PostgreSQL</p>
+    <form id="todo-form">
+      <input id="title" type="text" placeholder="Enter a task..." required>
+      <button type="submit">Add Todo</button>
+    </form>
+    <div id="status"></div>
+    <ul id="todo-list"></ul>
+  </div>
+
+  <script>
+    const form = document.getElementById("todo-form");
+    const titleInput = document.getElementById("title");
+    const todoList = document.getElementById("todo-list");
+    const status = document.getElementById("status");
+
+    async function loadTodos() {
+      try {
+        const response = await fetch("/api/todos");
+        const todos = await response.json();
+        todoList.innerHTML = "";
+        todos.forEach(todo => {
+          const li = document.createElement("li");
+          const task = document.createElement("span");
+          task.className = "task" + (todo.completed ? " completed" : "");
+          task.textContent = todo.title;
+
+          const actions = document.createElement("div");
+          actions.className = "actions";
+
+          const completeButton = document.createElement("button");
+          completeButton.textContent = todo.completed ? "Undo" : "Done";
+          completeButton.onclick = () => toggleTodo(todo.id, !todo.completed);
+
+          const deleteButton = document.createElement("button");
+          deleteButton.textContent = "Delete";
+          deleteButton.className = "delete";
+          deleteButton.onclick = () => deleteTodo(todo.id);
+
+          actions.appendChild(completeButton);
+          actions.appendChild(deleteButton);
+          li.appendChild(task);
+          li.appendChild(actions);
+          todoList.appendChild(li);
+        });
+      } catch (error) {
+        status.textContent = "Could not connect to backend.";
+      }
+    }
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      const title = titleInput.value.trim();
+      if (!title) return;
+      await fetch("/api/todos", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({title})
+      });
+      titleInput.value = "";
+      status.textContent = "Todo added successfully.";
+      loadTodos();
+    });
+
+    async function toggleTodo(id, completed) {
+      await fetch(`/api/todos/${id}`, {
+        method:"PUT",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({completed})
+      });
+      loadTodos();
+    }
+
+    async function deleteTodo(id) {
+      await fetch(`/api/todos/${id}`, {method:"DELETE"});
+      status.textContent = "Todo deleted.";
+      loadTodos();
+    }
+
+    loadTodos();
+  </script>
+</body>
+</html>
