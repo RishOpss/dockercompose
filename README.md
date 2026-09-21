@@ -2,7 +2,7 @@
 
 A three-tier Todo application demonstrating Docker Compose, container networking, service dependencies, and PostgreSQL persistence.
 
-## Architecture
+## Architecture - Rishabh
 
 Browser -> Frontend (Nginx) -> Backend (Flask) -> Database (PostgreSQL)
 
